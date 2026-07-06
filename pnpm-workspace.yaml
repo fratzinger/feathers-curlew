@@ -1,0 +1,9 @@
+shellEmulator: true
+
+trustPolicy: no-downgrade
+
+# Single-package repo. This file exists so pnpm picks up build-script approvals
+# (esbuild ships its platform binary via a postinstall script).
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true

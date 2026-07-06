@@ -1,0 +1,108 @@
+{
+  "name": "feathers-curlew",
+  "type": "module",
+  "version": "0.0.0",
+  "packageManager": "pnpm@11.1.3",
+  "description": "AI-friendly CLI toolkit for driving FeathersJS v5 servers, in-process or remote.",
+  "license": "MIT",
+  "author": "Frederik Schmatz (https://github.com/fratzinger)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fratzinger/feathers-curlew.git"
+  },
+  "homepage": "https://github.com/fratzinger/feathers-curlew#readme",
+  "bugs": "https://github.com/fratzinger/feathers-curlew/issues",
+  "keywords": [
+    "feathers",
+    "feathersjs",
+    "cli",
+    "citty",
+    "ai",
+    "agent"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "bin": {
+    "curlew": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "prepublishOnly": "pnpm build"
+  },
+  "peerDependencies": {
+    "@feathersjs/authentication-client": "^5.0.0",
+    "@feathersjs/feathers": "^5.0.0",
+    "@feathersjs/rest-client": "^5.0.0",
+    "@feathersjs/socketio-client": "^5.0.0",
+    "socket.io-client": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@feathersjs/authentication-client": {
+      "optional": true
+    },
+    "@feathersjs/rest-client": {
+      "optional": true
+    },
+    "@feathersjs/socketio-client": {
+      "optional": true
+    },
+    "socket.io-client": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "c12": "^3.3.4",
+    "citty": "^0.2.2",
+    "consola": "^3.4.2",
+    "defu": "^6.1.7",
+    "sift": "^17.1.3"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.2",
+    "@feathers-community/eslint-config": "^0.2.0",
+    "@feathersjs/authentication": "^5.0.46",
+    "@feathersjs/authentication-client": "^5.0.46",
+    "@feathersjs/authentication-local": "^5.0.46",
+    "@feathersjs/errors": "^5.0.46",
+    "@feathersjs/feathers": "^5.0.46",
+    "@feathersjs/koa": "^5.0.46",
+    "@feathersjs/memory": "^5.0.46",
+    "@feathersjs/rest-client": "^5.0.46",
+    "@feathersjs/socketio": "^5.0.46",
+    "@feathersjs/socketio-client": "^5.0.46",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.6.0",
+    "prettier": "^3.9.4",
+    "publint": "^0.3.0",
+    "socket.io-client": "^4.8.0",
+    "tsdown": "^0.22.3",
+    "typescript": "^6.0.3",
+    "vitepress": "2.0.0-alpha.17",
+    "vitest": "^4.1.9"
+  }
+}
