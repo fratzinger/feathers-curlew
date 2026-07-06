@@ -15,6 +15,9 @@ hero:
     - theme: alt
       text: Custom Commands
       link: /guide/custom-commands
+    - theme: alt
+      text: View on GitHub
+      link: https://github.com/fratzinger/feathers-curlew
 
 features:
   - title: In-process or remote

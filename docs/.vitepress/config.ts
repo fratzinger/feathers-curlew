@@ -1,4 +1,10 @@
+import { createRequire } from 'node:module'
 import { defineConfig } from 'vitepress'
+
+const require = createRequire(import.meta.url)
+const pkg = require('../../package.json')
+
+const repo = 'https://github.com/fratzinger/feathers-curlew'
 
 export default defineConfig({
   title: 'feathers-curlew',
@@ -11,7 +17,15 @@ export default defineConfig({
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
       { text: 'Configuration', link: '/guide/config' },
+      {
+        text: `v${pkg.version}`,
+        items: [
+          { text: 'Release Notes', link: `${repo}/releases` },
+          { text: 'npm', link: `https://www.npmjs.com/package/${pkg.name}` },
+        ],
+      },
     ],
+    socialLinks: [{ icon: 'github', link: repo }],
     sidebar: [
       {
         text: 'Guide',
