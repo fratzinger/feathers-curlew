@@ -1,7 +1,7 @@
 {
   "name": "feathers-curlew",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "packageManager": "pnpm@11.1.3",
   "description": "AI-friendly CLI toolkit for driving FeathersJS v5 servers, in-process or remote.",
   "license": "MIT",
