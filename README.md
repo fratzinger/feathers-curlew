@@ -52,6 +52,19 @@ npx curlew service api/v1/users find        # any path, generically
 
 Add `--pretty` for indented JSON. Errors go to stderr as JSON with exit code 1.
 
+## Teach your AI agent
+
+`feathers-curlew` is built to be driven by an AI agent. Generate instructions tailored to your app — real
+services, methods, custom commands, and the safety model — and drop them into your agent config:
+
+```bash
+npx curlew instructions --out AGENTS.md                                      # idempotent managed block
+npx curlew instructions --format skill --out .claude/skills/curlew/SKILL.md  # Claude Code Skill
+```
+
+Re-run after your services change; the block is replaced in place, never duplicated. See the
+[AI Agents guide](./docs/guide/ai-agents.md).
+
 ## Modes
 
 - **In-process** (default): boots your app (`app.setup()`) and calls services directly — full DB access,

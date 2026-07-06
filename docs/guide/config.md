@@ -12,14 +12,15 @@ There are two places to configure curlew, merged together (config file wins, the
 
 Valid in both the plugin and the config file.
 
-| Option        | Type                            | Default            | Description                                      |
-| ------------- | ------------------------------- | ------------------ | ------------------------------------------------ |
-| `permission`  | `'internal' \| 'authenticated'` | `'internal'`       | Default call permission.                         |
-| `userService` | `string`                        | `'users'`          | Service used to resolve `--as`.                  |
-| `authService` | `string`                        | `'authentication'` | Authentication service path.                     |
-| `provider`    | `string`                        | `'curlew'`         | `params.provider` label on authenticated calls.  |
-| `services`    | `string[]`                      | `[]`               | Extra service paths to expose as named commands. |
-| `commands`    | `CurlewCommand[]`               | `[]`               | Custom commands.                                 |
+| Option        | Type                            | Default            | Description                                                      |
+| ------------- | ------------------------------- | ------------------ | ---------------------------------------------------------------- |
+| `permission`  | `'internal' \| 'authenticated'` | `'internal'`       | Default call permission.                                         |
+| `userService` | `string`                        | `'users'`          | Service used to resolve `--as`.                                  |
+| `authService` | `string`                        | `'authentication'` | Authentication service path.                                     |
+| `provider`    | `string`                        | `'curlew'`         | `params.provider` label on authenticated calls.                  |
+| `services`    | `string[]`                      | `[]`               | Extra service paths to expose as named commands.                 |
+| `commands`    | `CurlewCommand[]`               | `[]`               | Custom commands.                                                 |
+| `plugins`     | `CurlewPlugin[]`                | `[]`               | Plugins (env hooks + command bundles). See [Plugins](./plugins). |
 
 ## Config-file options (`CurlewConfig`)
 
@@ -79,9 +80,25 @@ shorthands `findOne` (one record or `null`), `exists [id]` (`{ exists }`, no 404
 (a bare number) and `findAll` (disables pagination). Bulk `patch`/`remove` use the literal id `null` on
 `multi` services. Feathers **custom methods** are reachable through `service <path> <method>`.
 
+**Ids:** numeric-looking ids become numbers, the literal `null` triggers a bulk op, and everything else
+(UUIDs, string ids) passes through unchanged. Dotted query keys (e.g. `{"project.name":"…"}`) are passed
+to the adapter verbatim, so feathers-kysely-style relation queries work as-is.
+
 ### Top-level commands
 
 `authenticate`, `whoami` (resolve the current user), `logout` (clear the stored remote session),
 `services` (list services), `describe <path>` (methods a service supports), `service <path> <method>`,
 `waitUntil <service> [event]` (in-process; block until a matching event fires), and
 `instructions [--format agents|skill]` (generate agent-ready docs for this app).
+
+## Programmatic API
+
+The package's exports, for embedding or advanced use:
+
+- `curlew(options)` — the Feathers plugin (`app.configure`).
+- `runCurlew(appOrClient, opts)` — run a command; resolves to the exit code (never calls `process.exit`).
+- `defineCurlewConfig` / `defineCurlewCommand` / `defineCurlewPlugin` — typed identity helpers.
+- `loadCurlewConfig(cwd?)` — load `curlew.config.ts` (via c12).
+- `createInProcessClient(app, options)` / `createRemoteClient(remote, options)` — build a `CurlewClient` directly.
+- `waitForEvent(app, service, options)` — the `waitUntil` primitive.
+- `CurlewError` — error type with a `.code`.

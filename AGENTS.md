@@ -43,6 +43,11 @@ Before finishing a change, all of these must pass: **typecheck · lint · format
 - Two config surfaces (plugin options + `curlew.config.ts`) are merged with defu; `commands`/`plugins`
   arrays are unioned then deduped by name (config-file wins).
 
+## Keeping code & docs in sync
+
+The guides, the configuration reference and the `instructions` output are hand-written. When you add or
+change a command, flag, config option or export, update them in the same change so they don't drift.
+
 ## Gotchas
 
 - **c12 is pinned to `^3`** — its `latest` tag is a 4.0 beta.

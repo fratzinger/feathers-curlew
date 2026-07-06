@@ -22,6 +22,7 @@ export default defineConfig({
           { text: 'Permissions', link: '/guide/permissions' },
           { text: 'Custom Commands', link: '/guide/custom-commands' },
           { text: 'Plugins', link: '/guide/plugins' },
+          { text: 'AI Agents', link: '/guide/ai-agents' },
           { text: 'Configuration', link: '/guide/config' },
         ],
       },

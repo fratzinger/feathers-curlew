@@ -5,6 +5,9 @@ hero:
   name: feathers-curlew
   text: Drive your FeathersJS server from the CLI
   tagline: An AI-friendly command-line toolkit you configure into your app. JSON in, JSON out.
+  image:
+    src: /logo.svg
+    alt: feathers-curlew
   actions:
     - theme: brand
       text: Get Started

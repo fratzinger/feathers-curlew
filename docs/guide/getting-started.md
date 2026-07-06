@@ -120,22 +120,13 @@ cat users.json | npx curlew users create --data -
 
 ## Teaching an AI agent about curlew
 
-curlew is meant to be driven by an AI agent. Generate agent-ready instructions — tailored to your actual
-services and custom commands — and drop them into your agent config:
+curlew is built to be driven by an AI agent. Generate instructions tailored to your app — real services,
+methods, custom commands and the permission model — and drop them into your agent config (see
+[AI Agents](./ai-agents) for the full story):
 
 ```bash
-# idempotent managed block in your AGENTS.md / CLAUDE.md
-npx curlew instructions --out AGENTS.md
-
-# or emit a Claude Code Skill (overwrites the file)
-npx curlew instructions --format skill --out .claude/skills/curlew/SKILL.md
+npx curlew instructions --out AGENTS.md   # idempotent managed block; re-run to update in place
 ```
-
-The output lists your real services and their methods, your custom commands, the command grammar, the
-flags, and the permission model — so the agent knows exactly how to drive this server. `--out` is
-idempotent: it replaces the block between `<!-- curlew:instructions:start -->` and
-`<!-- curlew:instructions:end -->` (or overwrites the Skill file), so re-run it whenever your services
-change and it updates in place.
 
 ## Programmatic use
 
