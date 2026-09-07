@@ -1,7 +1,9 @@
 import type { AnyCurlewCommand, CurlewClient, ResolvedOptions } from '../types'
 import { defineCommand } from 'citty'
 import { CurlewError } from '../errors'
-import { callFromArgs, commonArgs, makeOutput } from './shared'
+import { makeOutput } from '../output'
+import { callFromArgs } from './call-from-args'
+import { commonArgs } from './common-args'
 
 /**
  * Wrap a user-defined command as a citty command, injecting the curlew context

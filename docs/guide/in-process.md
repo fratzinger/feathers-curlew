@@ -63,7 +63,7 @@ When you call `runCurlew(app)` programmatically on an app you have already set u
 in-process with `--params`:
 
 ```bash
-curlew users patch 42 --data '{"plan":"pro"}' --params '{"tenantId":"acme","skipAudit":true}'
+curlew patch users 42 --data '{"plan":"pro"}' --params '{"tenantId":"acme","skipAudit":true}'
 ```
 
 curlew's own flags (`--query`, `--as`/`--token`/`--internal`, pagination) win on their keys; `--params`
@@ -87,15 +87,61 @@ background/scheduler jobs, or external sources it subscribes to (message queues,
 see the effect of a separate `curlew` command (a different app instance). It's also available
 programmatically: `import { waitForEvent } from 'feathers-curlew'`.
 
-## What gets generated
+## Streaming events
 
-- One named command per registered service whose path is a single token (`users`, `messages`).
-  Nested paths (`api/v1/users`) are reached via the generic `service` command.
-- Each service's sub-commands are **tailored to its exposed methods** (`getServiceOptions().methods`):
-  CRUD verbs only when the service supports them, the read shorthands (`findOne`/`findAll`/`count`/`exists`)
-  when `find` is exposed, and every **custom method** as its own sub-command (e.g. `curlew messages markRead`).
-- Built-ins: `authenticate`, `whoami`, `logout`, `services`, `describe`, `service`.
+`watch <service> [event]` is the streaming counterpart: where `waitUntil` blocks for one event and exits,
+`watch` keeps printing — one JSON line per event — until you interrupt it:
+
+```bash
+curlew watch orders --query '{"status":"paid"}'
+curlew watch orders created --limit 10        # stop after 10 events
+curlew watch orders --timeout 60000           # stop after a minute
+```
+
+It uses the same `sift` matching and the same isolated-app caveat as `waitUntil`. Output is NDJSON, so it
+pipes: `curlew watch orders | jq -r '.data.id'`. Programmatically:
+`import { watchEvents } from 'feathers-curlew'`.
+
+### Custom event matching
+
+`--query` is matched with [`sift`](https://github.com/crcn/sift.js) by default. `matcher` swaps that out —
+same shape as `@feathersjs/memory`'s option, so a configured sift instance drops straight in, or a
+different engine entirely:
+
+```ts
+import sift from 'sift'
+
+export default defineCurlewConfig({
+  // sift with your own operators
+  matcher: (query) => sift(query, { operations: myOperations }),
+})
+```
+
+It is a **factory**: given the query it returns a predicate over the event data. curlew strips the
+pagination/projection keys (`$limit`, `$skip`, `$sort`, `$select`) before calling it — those say how to
+fetch, not what to match — and treats a predicate that throws as "no match", so one odd payload can't tear
+down a long-running `watch`. It applies to both `waitUntil` and `watch`.
+
+## The command set
+
+The command tree is **static** — the service is an argument, not a command — so nothing has to be
+introspected to build it:
+
+- One command per verb: `find`, `findOne`, `findAll`, `count`, `exists`, `get`, `create`, `update`,
+  `patch`, `remove`. Each takes the service path first: `curlew find users`, `curlew patch users 42`.
+- Any path works, including nested (`curlew find api/v1/orders`) and names that are also curlew
+  commands (`curlew find services`).
+- `call <service> <method>` for Feathers **custom methods** (e.g. `curlew call messages markRead`).
+- Built-ins: `authenticate`, `whoami`, `logout`, `services`, `describe`, `waitUntil`, `watch`,
+  `instructions`.
 - Your [custom commands](./custom-commands).
 
-In remote mode there is no method introspection, so services get the standard CRUD set plus the read
-shorthands.
+Use `curlew describe <service>` to see which methods a service supports — calling one it genuinely does
+not have fails with `E_UNKNOWN_METHOD`.
+
+::: warning `describe` lists what is exposed, not what is callable
+`describe` reports `getServiceOptions().methods` — the methods a service exposes to **external** clients.
+curlew's calls are internal (no `provider`), so that allowlist does not gate them: if your class
+implements `update` but omits it from `methods`, `curlew update users 42` still runs. Restrict internal
+access with hooks, not with `methods`.
+:::

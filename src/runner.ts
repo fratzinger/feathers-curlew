@@ -8,7 +8,7 @@ import type {
 } from './types'
 import { runCommand, showUsage } from 'citty'
 import { createInProcessClient } from './client/in-process'
-import { buildCli } from './commands'
+import { buildCli } from './cli/build-cli'
 import { resolveOptions } from './options'
 import { writeError } from './output'
 
@@ -90,7 +90,7 @@ export async function runCurlew(
     if (argv[0] === '--version' || argv[0] === '-v') {
       process.stdout.write(`${opts.version ?? '0.0.0'}\n`)
     } else {
-      const root = await buildCli({ client, options, version: opts.version })
+      const root = buildCli({ client, options, version: opts.version })
       const matched = resolveTarget(root, argv)
       if (
         argv.length === 0 ||

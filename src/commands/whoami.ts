@@ -1,7 +1,8 @@
 import type { CurlewClient } from '../types'
 import { defineCommand } from 'citty'
 import { writeResult } from '../output'
-import { callFromArgs, commonArgs } from './shared'
+import { callFromArgs } from './call-from-args'
+import { commonArgs } from './common-args'
 
 /** `whoami` — resolve the acting user from --token/--as or the stored session. */
 export function makeWhoamiCommand(client: CurlewClient) {

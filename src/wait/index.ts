@@ -1,0 +1,6 @@
+export { toMatcher } from './matcher'
+export type { QueryMatcher } from './matcher'
+export { waitForEvent } from './wait-for-event'
+export type { WaitForEventOptions, WaitForEventResult } from './wait-for-event'
+export { watchEvents } from './watch-events'
+export type { WatchedEvent, WatchEventsOptions } from './watch-events'

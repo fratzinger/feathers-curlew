@@ -1,5 +1,6 @@
 import type { Application } from '@feathersjs/feathers'
 import type { ArgsDef, ParsedArgs } from 'citty'
+import type { QueryMatcher } from './wait/matcher'
 
 /** How a call is authorized against the Feathers server. */
 export type PermissionMode = 'internal' | 'authenticated'
@@ -17,7 +18,7 @@ export type RemoteTransport = 'rest' | 'socketio'
 export interface CallContext {
   /** Force an internal (no-provider) call that bypasses auth/authorization. */
   internal?: boolean
-  /** Act as the user with this id (loads the user, runs authorization hooks). */
+  /** Act as this user (resolved via `resolveUser`, runs authorization hooks). */
   as?: string
   /** JWT used to authenticate this single call. */
   token?: string
@@ -33,23 +34,72 @@ export interface CallContext {
 export interface RemoteConfig {
   url: string
   transport?: RemoteTransport
-  /** Service paths to expose as named sub-commands (remote can't auto-discover). */
+  /** Known service paths (remote can't auto-discover them). */
   services?: string[]
   /** Default authentication strategy for `authenticate`. */
   strategy?: string
+}
+
+/** Context passed to `resolveUser` when `--as` needs to be turned into a user. */
+export interface ResolveUserContext {
+  app: Application
+  /** The raw `--as` value, exactly as typed on the command line. */
+  value: string
+  options: ResolvedOptions
+}
+
+/** Context passed to an `impersonate` function that owns the mint itself. */
+export interface ImpersonateContext {
+  app: Application
+  /** The acting user, already resolved via `resolveUser`. */
+  user: unknown
+  /** The raw `--as` value. */
+  value: string
+  /** `--expires-in`, if passed. */
+  expiresIn?: string
+  /** `--payload`, if passed. */
+  payload?: Record<string, unknown>
+  options: ResolvedOptions
 }
 
 /** Options accepted by BOTH the `curlew()` plugin and `curlew.config.ts`. */
 export interface CurlewOptions {
   /** Default permission mode. @default 'internal' */
   permission?: PermissionMode
-  /** Service used to resolve `--as <userId>`. @default 'users' */
+  /** Service `--as` resolves against (and loads ids from). @default 'users' */
   userService?: string
+  /**
+   * Resolve `--as <value>` to a user. Return a user object to use it as-is, or
+   * an id to have curlew load it from `userService`. Lets `--as` accept emails,
+   * names or anything else instead of just the primary key.
+   * @default userService.get(coerceId(value))
+   */
+  resolveUser?: (ctx: ResolveUserContext) => unknown | Promise<unknown>
+  /**
+   * Allow `authenticate --as <user>` to mint a JWT without credentials.
+   * `true` mints via the app's own authentication service; a function takes the
+   * mint over entirely. In-process only, and off unless enabled here.
+   * @default false
+   */
+  impersonate?:
+    boolean | ((ctx: ImpersonateContext) => string | Promise<string>)
+  /**
+   * Require `--yes` for a bulk write (`patch`/`remove` with the id `null`).
+   * Off by default, matching curlew's internal/root posture.
+   * @default false
+   */
+  confirmBulk?: boolean
+  /**
+   * Build the predicate `waitUntil`/`watch` match events with — same shape as
+   * `@feathersjs/memory`'s `matcher`, so a configured sift instance (or a
+   * different engine entirely) drops in. @default sift
+   */
+  matcher?: QueryMatcher
   /** Authentication service path. @default 'authentication' */
   authService?: string
   /** `params.provider` label set on authenticated in-process calls. @default 'curlew' */
   provider?: string
-  /** Extra service paths to expose as named sub-commands. */
+  /** Known service paths, for `services`/`instructions` when they can't be discovered (remote). */
   services?: string[]
   /** Custom commands, unioned across the plugin and config surfaces. */
   commands?: AnyCurlewCommand[]
@@ -75,6 +125,10 @@ export interface CurlewConfig extends CurlewOptions {
 export interface ResolvedOptions {
   permission: PermissionMode
   userService: string
+  resolveUser?: (ctx: ResolveUserContext) => unknown | Promise<unknown>
+  impersonate: boolean | ((ctx: ImpersonateContext) => string | Promise<string>)
+  confirmBulk: boolean
+  matcher?: QueryMatcher
   authService: string
   provider: string
   services: string[]

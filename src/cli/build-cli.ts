@@ -1,28 +1,17 @@
 import type { SubCommandsDef } from 'citty'
 import type { CurlewClient, ResolvedOptions } from '../types'
 import { defineCommand } from 'citty'
-import { makeAuthenticateCommand } from './authenticate'
-import { makeCustomCommand } from './custom'
-import { makeDescribeCommand } from './describe'
-import { makeInstructionsCommand } from './instructions'
-import { makeLogoutCommand } from './logout'
-import { makeGenericServiceCommand, makePerServiceCommand } from './service'
-import { makeServicesCommand } from './services'
-import { makeWaitUntilCommand } from './wait-until'
-import { makeWhoamiCommand } from './whoami'
-
-/** Only single-token service paths get a named sub-command; the rest use `service`. */
-const SAFE_SERVICE_NAME = /^[a-z0-9][\w-]*$/i
-const RESERVED = new Set([
-  'authenticate',
-  'describe',
-  'instructions',
-  'logout',
-  'service',
-  'services',
-  'waitUntil',
-  'whoami',
-])
+import { makeAuthenticateCommand } from '../commands/authenticate'
+import { makeCallCommand } from '../commands/call'
+import { makeCustomCommand } from '../commands/custom'
+import { makeDescribeCommand } from '../commands/describe'
+import { makeInstructionsCommand } from '../commands/instructions'
+import { makeLogoutCommand } from '../commands/logout'
+import { makeMethodCommands } from '../commands/method'
+import { makeServicesCommand } from '../commands/services'
+import { makeWaitUntilCommand } from '../commands/wait-until'
+import { makeWatchCommand } from '../commands/watch'
+import { makeWhoamiCommand } from '../commands/whoami'
 
 export interface BuildCliContext {
   client: CurlewClient
@@ -30,36 +19,33 @@ export interface BuildCliContext {
   version?: string
 }
 
-/** Assemble the full citty command tree, closing over the curlew context. */
-export async function buildCli(ctx: BuildCliContext) {
+/**
+ * Assemble the citty command tree, closing over the curlew context.
+ *
+ * The tree is **static**: the service is an argument to a verb
+ * (`curlew find users`), not a command of its own, so nothing has to be
+ * introspected to build it. That also means any service path works — nested
+ * (`api/v1/users`) and names that would otherwise collide with a curlew
+ * command (a service called `services`).
+ */
+export function buildCli(ctx: BuildCliContext) {
   const { client, options, version } = ctx
 
   const subCommands: SubCommandsDef = {
-    authenticate: makeAuthenticateCommand(client),
+    ...makeMethodCommands(client, options),
+    authenticate: makeAuthenticateCommand(client, options),
+    call: makeCallCommand(client, options),
     describe: makeDescribeCommand(client),
     instructions: makeInstructionsCommand(client, options),
     logout: makeLogoutCommand(client),
-    service: makeGenericServiceCommand(client),
     services: makeServicesCommand(client),
-    waitUntil: makeWaitUntilCommand(client),
+    waitUntil: makeWaitUntilCommand(client, options),
+    watch: makeWatchCommand(client, options),
     whoami: makeWhoamiCommand(client),
   }
 
-  // Named per-service commands, tailored to each service's exposed methods
-  // (in-process introspects; remote falls back to the standard CRUD set).
-  const discovered = client.listServices() ?? options.services
-  for (const name of discovered) {
-    if (
-      !SAFE_SERVICE_NAME.test(name) ||
-      RESERVED.has(name) ||
-      subCommands[name]
-    )
-      continue
-    const methods = await client.serviceMethods(name)
-    subCommands[name] = makePerServiceCommand(client, name, methods)
-  }
-
-  // Custom commands (union of the plugin and config surfaces).
+  // Custom commands last: a user-defined command deliberately overrides a
+  // built-in of the same name.
   for (const command of options.commands) {
     const cmd = makeCustomCommand(client, options, command)
     subCommands[command.name] = cmd

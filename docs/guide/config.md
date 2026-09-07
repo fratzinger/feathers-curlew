@@ -12,15 +12,19 @@ There are two places to configure curlew, merged together (config file wins, the
 
 Valid in both the plugin and the config file.
 
-| Option        | Type                            | Default            | Description                                                      |
-| ------------- | ------------------------------- | ------------------ | ---------------------------------------------------------------- |
-| `permission`  | `'internal' \| 'authenticated'` | `'internal'`       | Default call permission.                                         |
-| `userService` | `string`                        | `'users'`          | Service used to resolve `--as`.                                  |
-| `authService` | `string`                        | `'authentication'` | Authentication service path.                                     |
-| `provider`    | `string`                        | `'curlew'`         | `params.provider` label on authenticated calls.                  |
-| `services`    | `string[]`                      | `[]`               | Extra service paths to expose as named commands.                 |
-| `commands`    | `CurlewCommand[]`               | `[]`               | Custom commands.                                                 |
-| `plugins`     | `CurlewPlugin[]`                | `[]`               | Plugins (env hooks + command bundles). See [Plugins](./plugins). |
+| Option        | Type                            | Default            | Description                                                                                                |
+| ------------- | ------------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `permission`  | `'internal' \| 'authenticated'` | `'internal'`       | Default call permission.                                                                                   |
+| `userService` | `string`                        | `'users'`          | Service used to resolve `--as`.                                                                            |
+| `resolveUser` | `(ctx) => user \| id`           | –                  | Custom `--as` lookup. See [Permissions](./permissions#resolving-as).                                       |
+| `impersonate` | `boolean \| (ctx) => string`    | `false`            | Allow `authenticate --as` to mint a JWT. See [Permissions](./permissions#minting-a-token-authenticate-as). |
+| `confirmBulk` | `boolean`                       | `false`            | Require `--yes` for `patch`/`remove` with the id `null`. See [Permissions](./permissions#bulk-writes).     |
+| `matcher`     | `(query) => (data) => boolean`  | `sift`             | How `waitUntil`/`watch` match events. See [In-Process](./in-process#custom-event-matching).                |
+| `authService` | `string`                        | `'authentication'` | Authentication service path.                                                                               |
+| `provider`    | `string`                        | `'curlew'`         | `params.provider` label on authenticated calls.                                                            |
+| `services`    | `string[]`                      | `[]`               | Known service paths, for `services`/`instructions` when they can't be discovered.                          |
+| `commands`    | `CurlewCommand[]`               | `[]`               | Custom commands.                                                                                           |
+| `plugins`     | `CurlewPlugin[]`                | `[]`               | Plugins (env hooks + command bundles). See [Plugins](./plugins).                                           |
 
 ## Config-file options (`CurlewConfig`)
 
@@ -36,12 +40,12 @@ Extends `CurlewOptions` with CLI-side settings.
 
 ### `RemoteConfig`
 
-| Option      | Type                   | Default   | Description                                |
-| ----------- | ---------------------- | --------- | ------------------------------------------ |
-| `url`       | `string`               | –         | Server base URL (required for remote).     |
-| `transport` | `'rest' \| 'socketio'` | `'rest'`  | Remote transport.                          |
-| `services`  | `string[]`             | –         | Service paths to expose as named commands. |
-| `strategy`  | `string`               | `'local'` | Default `authenticate` strategy.           |
+| Option      | Type                   | Default   | Description                                       |
+| ----------- | ---------------------- | --------- | ------------------------------------------------- |
+| `url`       | `string`               | –         | Server base URL (required for remote).            |
+| `transport` | `'rest' \| 'socketio'` | `'rest'`  | Remote transport.                                 |
+| `services`  | `string[]`             | –         | Known service paths (remote can't discover them). |
+| `strategy`  | `string`               | `'local'` | Default `authenticate` strategy.                  |
 
 ## CLI flags
 
@@ -67,18 +71,54 @@ Extends `CurlewOptions` with CLI-side settings.
 | `--limit <n>`          | Max results ($limit).                                                |
 | `--data <json>`, `-d`  | Body for `create`/`update`/`patch`/custom methods.                   |
 | `--internal`           | Force an internal, full-access call.                                 |
-| `--as <userId>`        | Run as a user (in-process).                                          |
+| `--as <user>`          | Run as a user (in-process; see `resolveUser`).                       |
 | `--token <jwt>`        | Authenticate the call with a JWT.                                    |
 | `--params <json>`      | Extra Feathers params, in-process only (merged; curlew's flags win). |
+| `--ndjson`             | Stream results as newline-delimited JSON, one record per line.       |
+| `--dry-run`            | On a write: report `{ wouldAffect, sample }` and change nothing.     |
+| `--yes`, `-y`          | Confirm a bulk write when `confirmBulk` is on.                       |
 
 `--data` and `--query` also accept `@file.json` (read from a file) and `-` (read from stdin).
 
-### Commands per service
+### Method commands
 
-Each service exposes `find`, `get <id>`, `create`, `update <id>`, `patch <id>`, `remove <id>`, plus the
+The verb comes first and the service path is its argument: `find <service>`, `get <service> <id>`,
+`create <service>`, `update <service> <id>`, `patch <service> <id>`, `remove <service> <id>`, plus the
 shorthands `findOne` (one record or `null`), `exists [id]` (`{ exists }`, no 404 error), `count`
 (a bare number) and `findAll` (disables pagination). Bulk `patch`/`remove` use the literal id `null` on
-`multi` services. Feathers **custom methods** are reachable through `service <path> <method>`.
+`multi` services. Feathers **custom methods** are reachable through `call <service> <method>`.
+
+```bash
+# Read shortcuts
+npx curlew findOne users --query '{"email":"a@b.c"}'  # one record, or null
+npx curlew exists users 42                            # → { "exists": true } (no 404 error)
+npx curlew count users --query '{"active":true}'      # → 12
+npx curlew findAll users                              # ignore pagination, return all
+
+# Feathers custom methods: call <service> <method>
+npx curlew call messages markRead --data '{"id":42}'
+
+# Bulk patch/remove on `multi` services — use the literal id `null`
+npx curlew patch users null --data '{"active":false}' --query '{"pending":true}'
+npx curlew remove users null --query '{"expired":true}'
+
+# Preview any write first — reports what it would hit, changes nothing
+npx curlew remove users null --query '{"expired":true}' --dry-run
+# {"dryRun":true,"method":"remove","service":"users","wouldAffect":412,"sample":[…]}
+```
+
+Short flags: `-q` = `--query`, `-d` = `--data`, `-y` = `--yes`. Multi `create` takes a JSON array
+(`--data '[{…},{…}]'`).
+
+::: warning Bulk writes hit everything
+`patch`/`remove` with the id `null` change **every matching record**, and calls are internal by default.
+Run `--dry-run` first, and set `confirmBulk: true` to make `--yes` mandatory — see
+[Permissions](./permissions#bulk-writes).
+:::
+
+Because the service is an argument rather than a command, **any** path works — nested
+(`curlew find api/v1/users`), hyphenated, or a name that is also a curlew command
+(`curlew find services`).
 
 **Ids:** numeric-looking ids become numbers, the literal `null` triggers a bulk op, and everything else
 (UUIDs, string ids) passes through unchanged. Dotted query keys (e.g. `{"project.name":"…"}`) are passed
@@ -86,10 +126,22 @@ to the adapter verbatim, so feathers-kysely-style relation queries work as-is.
 
 ### Top-level commands
 
-`authenticate`, `whoami` (resolve the current user), `logout` (clear the stored remote session),
-`services` (list services), `describe <path>` (methods a service supports), `service <path> <method>`,
+`find`/`findOne`/`findAll`/`count`/`exists`/`get`/`create`/`update`/`patch`/`remove` (see above),
+`call <path> <method>` (any method, incl. custom ones),
+`watch <service> [event]` (stream events as NDJSON, in-process),
+`authenticate` (log in, or mint a token with `--as`), `whoami` (resolve the current user),
+`logout` (clear the stored remote session),
+`services` (list services), `describe <path>` (methods a service supports),
 `waitUntil <service> [event]` (in-process; block until a matching event fires), and
 `instructions [--format agents|skill]` (generate agent-ready docs for this app).
+
+```bash
+npx curlew services                   # service paths curlew knows about
+npx curlew describe messages          # methods a service supports (incl. custom)
+npx curlew whoami --token "$JWT"      # resolve the current user
+npx curlew watch orders created       # stream events as NDJSON (in-process)
+npx curlew --remote logout            # forget the stored remote session
+```
 
 ## Programmatic API
 

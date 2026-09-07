@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { feathers } from '@feathersjs/feathers'
 import { MemoryService } from '@feathersjs/memory'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { curlew, runCurlew } from '../src'
+import { curlew, runCurlew } from 'feathers-curlew'
 import { capture } from './helpers'
 
 let app: any
@@ -41,7 +41,7 @@ describe('@file input', () => {
     const file = join(dir, 'note.json')
     writeFileSync(file, '{"title":"from file","tag":"x"}')
     const created = (
-      await run(['notes', 'create', '--data', `@${file}`])
+      await run(['create', 'notes', '--data', `@${file}`])
     ).json()
     expect(created.title).toBe('from file')
     expect(created.tag).toBe('x')
@@ -54,15 +54,15 @@ describe('@file input', () => {
     ])
     const file = join(dir, 'q.json')
     writeFileSync(file, '{"active":true}')
-    const result = (await run(['notes', 'find', '--query', `@${file}`])).json()
+    const result = (await run(['find', 'notes', '--query', `@${file}`])).json()
     expect(result).toHaveLength(1)
     expect(result[0].title).toBe('a')
   })
 
   it('errors clearly when the file is missing', async () => {
     const { code, errorJson } = await run([
-      'notes',
       'create',
+      'notes',
       '--data',
       '@/does/not/exist.json',
     ])

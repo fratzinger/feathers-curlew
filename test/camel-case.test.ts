@@ -1,7 +1,7 @@
 import { feathers } from '@feathersjs/feathers'
 import { MemoryService } from '@feathersjs/memory'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { curlew, runCurlew } from '../src'
+import { curlew, runCurlew } from 'feathers-curlew'
 import { capture } from './helpers'
 
 // camelCase service name + a camelCase custom method.
@@ -41,8 +41,8 @@ async function run(argv: string[]) {
 }
 
 describe('camelCase handling', () => {
-  it('exposes a camelCase service as a named command', async () => {
-    const found = (await run(['userNotes', 'find'])).json()
+  it('takes a camelCase service path as an argument', async () => {
+    const found = (await run(['find', 'userNotes'])).json()
     expect(Array.isArray(found)).toBe(true)
     expect(found).toHaveLength(2)
   })
@@ -50,8 +50,8 @@ describe('camelCase handling', () => {
   it('preserves camelCase (and boolean) properties on create', async () => {
     const created = (
       await run([
-        'userNotes',
         'create',
+        'userNotes',
         '--data',
         '{"firstName":"Grace","lastName":"Hopper","isAdmin":true}',
       ])
@@ -63,7 +63,7 @@ describe('camelCase handling', () => {
 
   it('filters by a camelCase field via --query', async () => {
     const result = (
-      await run(['userNotes', 'find', '--query', '{"firstName":"Ada"}'])
+      await run(['find', 'userNotes', '--query', '{"firstName":"Ada"}'])
     ).json()
     expect(result).toHaveLength(1)
     expect(result[0].lastName).toBe('Lovelace')
@@ -72,8 +72,8 @@ describe('camelCase handling', () => {
   it('--select keeps camelCase field names', async () => {
     const first = (
       await run([
-        'userNotes',
         'find',
+        'userNotes',
         '--select',
         'firstName,lastName',
         '--limit',
@@ -87,19 +87,19 @@ describe('camelCase handling', () => {
 
   it('--sort sorts by a camelCase field', async () => {
     const first = (
-      await run(['userNotes', 'find', '--sort', 'createdAt:desc'])
+      await run(['find', 'userNotes', '--sort', 'createdAt:desc'])
     ).json()[0]
     expect(first.firstName).toBe('Ada') // createdAt: 2
   })
 
   it('patches a camelCase property', async () => {
     const created = (
-      await run(['userNotes', 'create', '--data', '{"firstName":"Edsger"}'])
+      await run(['create', 'userNotes', '--data', '{"firstName":"Edsger"}'])
     ).json()
     const patched = (
       await run([
-        'userNotes',
         'patch',
+        'userNotes',
         String(created.id),
         '--data',
         '{"lastName":"Dijkstra"}',
@@ -111,7 +111,7 @@ describe('camelCase handling', () => {
   it('calls a camelCase custom method with camelCase data', async () => {
     const result = (
       await run([
-        'service',
+        'call',
         'userNotes',
         'markAsRead',
         '--data',

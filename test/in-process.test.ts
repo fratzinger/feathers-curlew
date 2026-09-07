@@ -6,7 +6,7 @@ import {
 import { feathers } from '@feathersjs/feathers'
 import { MemoryService } from '@feathersjs/memory'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { curlew, defineCurlewCommand, runCurlew } from '../src'
+import { curlew, defineCurlewCommand, runCurlew } from 'feathers-curlew'
 import { capture } from './helpers'
 
 const { hashPassword, protect } = localAuthHooks
@@ -99,8 +99,8 @@ describe('in-process client', () => {
 
   it('creates a user (hashes the password; internal calls still see it)', async () => {
     const { code, json } = await run(ctx.app, [
-      'users',
       'create',
+      'users',
       '--data',
       '{"email":"a@b.c","password":"secret"}',
     ])
@@ -116,8 +116,8 @@ describe('in-process client', () => {
       .service('users')
       .create({ email: 'ext@b.c', password: 'pw' })
     const { code, json } = await run(ctx.app, [
-      'users',
       'get',
+      'users',
       String(created.id),
       '--as',
       String(created.id),
@@ -127,11 +127,11 @@ describe('in-process client', () => {
     expect(json().password).toBeUndefined()
   })
 
-  it('finds users with a query via the named command', async () => {
+  it('finds users with a query', async () => {
     await ctx.app.service('users').create({ email: 'find@b.c', password: 'pw' })
     const { code, json } = await run(ctx.app, [
-      'users',
       'find',
+      'users',
       '--query',
       '{"email":"find@b.c"}',
     ])
@@ -141,8 +141,8 @@ describe('in-process client', () => {
     expect(result[0].email).toBe('find@b.c')
   })
 
-  it('works through the generic service passthrough', async () => {
-    const { code, json } = await run(ctx.app, ['service', 'users', 'find'])
+  it('works through the generic `call` passthrough', async () => {
+    const { code, json } = await run(ctx.app, ['call', 'users', 'find'])
     expect(code).toBe(0)
     expect(Array.isArray(json())).toBe(true)
   })
@@ -211,7 +211,7 @@ describe('in-process client', () => {
 
   it('defaults to an internal call (no provider)', async () => {
     ctx.seenParams.length = 0
-    await run(ctx.app, ['users', 'find'])
+    await run(ctx.app, ['find', 'users'])
     expect(ctx.seenParams.at(-1)?.provider).toBeUndefined()
   })
 
@@ -221,8 +221,8 @@ describe('in-process client', () => {
       .create({ email: 'as@b.c', password: 'pw' })
     ctx.seenParams.length = 0
     const { code } = await run(ctx.app, [
-      'users',
       'find',
+      'users',
       '--as',
       String(user.id),
     ])
@@ -235,8 +235,8 @@ describe('in-process client', () => {
   it('--params merges arbitrary extra params into the call', async () => {
     ctx.seenParams.length = 0
     await run(ctx.app, [
-      'users',
       'find',
+      'users',
       '--params',
       '{"tenantId":"acme","flag":true}',
     ])
@@ -251,8 +251,8 @@ describe('in-process client', () => {
       .create({ email: 'pm@b.c', password: 'pw' })
     ctx.seenParams.length = 0
     await run(ctx.app, [
-      'users',
       'find',
+      'users',
       '--as',
       String(user.id),
       '--params',
@@ -264,7 +264,7 @@ describe('in-process client', () => {
   })
 
   it('returns exit 1 and a structured JSON error on failure', async () => {
-    const { code, errorJson } = await run(ctx.app, ['users', 'get', '999999'])
+    const { code, errorJson } = await run(ctx.app, ['get', 'users', '999999'])
     expect(code).toBe(1)
     const parsed = errorJson()
     expect(parsed.error.code).toBe(404)

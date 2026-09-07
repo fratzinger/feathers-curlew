@@ -1,55 +1,18 @@
 #!/usr/bin/env node
-import type { CurlewMode, RemoteConfig, RemoteTransport } from './types'
+import type { CurlewMode, RemoteConfig } from '../types'
 import { createRequire } from 'node:module'
-import { createRemoteClient } from './client/remote'
-import { loadCurlewConfig } from './config'
-import { resolveOptions } from './options'
-import { writeError } from './output'
-import { applyPluginEnv } from './plugins'
-import { runCurlew } from './runner'
+import { createRemoteClient } from '../client/remote'
+import { loadCurlewConfig } from '../config'
+import { resolveOptions } from '../options'
+import { writeError } from '../output'
+import { applyPluginEnv } from '../plugins'
+import { runCurlew } from '../runner'
+import { peelBinFlags } from './bin-flags'
 
 const require = createRequire(import.meta.url)
+// Relative to the BUNDLE (dist/cli.mjs), not to this source file — moving this
+// file does not change the path, but changing the tsdown output name would.
 const pkg = require('../package.json') as { version: string }
-
-interface BinFlags {
-  mode?: CurlewMode
-  url?: string
-  transport?: RemoteTransport
-  cwd?: string
-  rest: string[]
-}
-
-/** Peel off curlew's own (transport-selection) flags before the command tree. */
-function peelBinFlags(argv: string[]): BinFlags {
-  const rest: string[] = []
-  const flags: BinFlags = { rest }
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i]
-    switch (arg) {
-      case '--remote':
-        flags.mode = 'remote'
-        break
-      case '--in-process':
-        flags.mode = 'in-process'
-        break
-      case '--url':
-        flags.url = argv[++i]
-        break
-      case '--transport':
-        flags.transport = argv[++i] as RemoteTransport
-        break
-      case '--mode':
-        flags.mode = argv[++i] as CurlewMode
-        break
-      case '--cwd':
-        flags.cwd = argv[++i]
-        break
-      default:
-        rest.push(arg)
-    }
-  }
-  return flags
-}
 
 const BARE_HELP = `curlew — drive your FeathersJS server from the CLI
 
@@ -60,10 +23,16 @@ Usage:
   curlew --remote --url <url> <command>    against a running server
 
 Built-in commands:
+  find|findOne|findAll|count|exists <service> [--query <json>]
+  get|remove <service> <id>
+  create|update|patch <service> [id] [--data <json>]
+  call <service> <method> [id]       any method, incl. Feathers custom methods
+  watch <service> [event]            stream events as NDJSON
+  services                           list service paths
+  describe <service>                 the methods a service supports
   authenticate --email <e> --password <p>
-  services
-  service <path> <method> [id] [--data <json>]
-  <service> find|get|create|update|patch|remove
+
+Safety: --dry-run previews a write, --ndjson streams large results.
 
 Common flags: --pretty --internal --as <id> --token <jwt> --query <json>
 `

@@ -4,6 +4,8 @@ import { defu } from 'defu'
 export const DEFAULT_OPTIONS: ResolvedOptions = {
   permission: 'internal',
   userService: 'users',
+  impersonate: false,
+  confirmBulk: false,
   authService: 'authentication',
   provider: 'curlew',
   services: [],
@@ -16,6 +18,10 @@ function pickOptions(source: CurlewOptions | undefined): CurlewOptions {
   const picked: CurlewOptions = {}
   if (source.permission !== undefined) picked.permission = source.permission
   if (source.userService !== undefined) picked.userService = source.userService
+  if (source.resolveUser !== undefined) picked.resolveUser = source.resolveUser
+  if (source.impersonate !== undefined) picked.impersonate = source.impersonate
+  if (source.confirmBulk !== undefined) picked.confirmBulk = source.confirmBulk
+  if (source.matcher !== undefined) picked.matcher = source.matcher
   if (source.authService !== undefined) picked.authService = source.authService
   if (source.provider !== undefined) picked.provider = source.provider
   if (source.services !== undefined) picked.services = source.services

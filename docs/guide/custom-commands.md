@@ -51,7 +51,7 @@ interface CurlewCommandContext {
   rawArgs: string[]
   client // the active CurlewClient
   app? // the Feathers app (in-process only)
-  call // { internal?, as?, token?, query? } derived from flags
+  call // { internal?, as?, token?, query?, paginate?, params? } derived from flags
   options // resolved curlew options
   output: (data: unknown) => void // print JSON (honors --pretty)
 }
@@ -62,7 +62,10 @@ call `output`, the return value is printed as JSON.
 
 ## Notes
 
-- Every custom command also gets the common flags (`--pretty`, `--internal`, `--as`, `--token`, `--query`).
+- Every custom command also gets the [common flags](./config#cli-flags): `--pretty`, `--internal`,
+  `--as`, `--token`, `--query`/`--select`/`--sort`/`--skip`/`--limit`, `--params`, `--ndjson`,
+  `--dry-run` and `--yes`. The `call` context already carries the parsed ones; `--dry-run` and `--yes`
+  are yours to honor if your command writes.
 - Set `requiresApp: true` for commands that touch the app/database directly; they error clearly in remote
   mode.
 - `aliases: ['q']` registers extra names for the command.
