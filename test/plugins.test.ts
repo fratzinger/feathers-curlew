@@ -6,7 +6,7 @@ import {
   defineCurlewCommand,
   defineCurlewPlugin,
   runCurlew,
-} from '../src'
+} from 'feathers-curlew'
 import { applyPluginEnv } from '../src/plugins'
 import { capture } from './helpers'
 
@@ -24,7 +24,7 @@ describe('applyPluginEnv', () => {
     await applyPluginEnv([plugin], {
       mode: 'in-process',
       cwd: '/x',
-      argv: ['users', 'find'],
+      argv: ['find', 'users'],
     })
     expect(process.env[KEY]).toBe('in-process')
   })

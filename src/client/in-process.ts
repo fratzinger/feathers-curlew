@@ -6,7 +6,8 @@ import type {
   ResolvedOptions,
 } from '../types'
 import { CurlewError } from '../errors'
-import { buildParams, coerceId } from '../params'
+import { buildParams } from '../params'
+import { coerceId } from '../utils/coerce-id'
 
 /**
  * In-process client: wraps a Feathers app and calls its services directly.
@@ -18,6 +19,21 @@ export function createInProcessClient(
   options: ResolvedOptions,
 ): CurlewClient {
   const service = (path: string): any => app.service(path)
+
+  /**
+   * A bound service method, or a clear error if the service doesn't have it.
+   * The command tree is static (any verb accepts any service path), so this is
+   * where "this service has no `find`" has to be caught.
+   */
+  const method = (path: string, name: string): ((...args: any[]) => any) => {
+    const svc = service(path)
+    if (typeof svc?.[name] !== 'function')
+      throw new CurlewError(
+        `Service "${path}" has no method "${name}".`,
+        'E_UNKNOWN_METHOD',
+      )
+    return (...args: any[]) => svc[name](...args)
+  }
 
   return {
     mode: 'in-process',
@@ -37,45 +53,39 @@ export function createInProcessClient(
       }
     },
     async find(path, ctx) {
-      return service(path).find(await buildParams(app, ctx, options))
+      return method(path, 'find')(await buildParams(app, ctx, options))
     },
     async get(path, id, ctx) {
-      return service(path).get(
+      return method(path, 'get')(
         coerceId(id),
         await buildParams(app, ctx, options),
       )
     },
     async create(path, data, ctx) {
-      return service(path).create(data, await buildParams(app, ctx, options))
+      return method(path, 'create')(data, await buildParams(app, ctx, options))
     },
     async update(path, id, data, ctx) {
-      return service(path).update(
+      return method(path, 'update')(
         coerceId(id),
         data,
         await buildParams(app, ctx, options),
       )
     },
     async patch(path, id, data, ctx) {
-      return service(path).patch(
+      return method(path, 'patch')(
         coerceId(id),
         data,
         await buildParams(app, ctx, options),
       )
     },
     async remove(path, id, ctx) {
-      return service(path).remove(
+      return method(path, 'remove')(
         coerceId(id),
         await buildParams(app, ctx, options),
       )
     },
-    async custom(path, method, data, ctx) {
-      const svc = service(path)
-      if (typeof svc[method] !== 'function')
-        throw new CurlewError(
-          `Service "${path}" has no method "${method}".`,
-          'E_UNKNOWN_METHOD',
-        )
-      return svc[method](data, await buildParams(app, ctx, options))
+    async custom(path, name, data, ctx) {
+      return method(path, name)(data, await buildParams(app, ctx, options))
     },
     async authenticate(
       payload: AuthenticatePayload,

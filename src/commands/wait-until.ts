@@ -1,12 +1,16 @@
-import type { CurlewClient } from '../types'
+import type { CurlewClient, ResolvedOptions } from '../types'
 import { defineCommand } from 'citty'
 import { CurlewError } from '../errors'
 import { writeResult } from '../output'
 import { waitForEvent } from '../wait'
-import { commonArgs, parseJson } from './shared'
+import { parseJson } from '../utils/parse-json'
+import { commonArgs } from './common-args'
 
 /** `waitUntil <service> [event]` — block until a matching event fires (in-process only). */
-export function makeWaitUntilCommand(client: CurlewClient) {
+export function makeWaitUntilCommand(
+  client: CurlewClient,
+  options: ResolvedOptions,
+) {
   return defineCommand({
     meta: {
       name: 'waitUntil',
@@ -49,6 +53,7 @@ export function makeWaitUntilCommand(client: CurlewClient) {
       const result = await waitForEvent(client.app, args.service, {
         events: args.event ? [args.event] : undefined,
         query: parseJson(args.query, '--query'),
+        matcher: options.matcher,
         timeout,
       })
       writeResult(result, { pretty: args.pretty })

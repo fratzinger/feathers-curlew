@@ -6,7 +6,7 @@ import {
 import { feathers } from '@feathersjs/feathers'
 import { MemoryService } from '@feathersjs/memory'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { curlew, runCurlew } from '../src'
+import { curlew, runCurlew } from 'feathers-curlew'
 import { capture } from './helpers'
 
 const { hashPassword, protect } = localAuthHooks

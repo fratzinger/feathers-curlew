@@ -22,8 +22,8 @@ hero:
 features:
   - title: In-process or remote
     details: Boot your app for full database access, or talk to a running server over REST / Socket.IO.
-  - title: Auto-generated commands
-    details: Every service becomes `curlew <service> find|get|create|update|patch|remove`, plus `authenticate`.
+  - title: Verb-first grammar
+    details: One verb per Feathers method — `curlew find users`, `curlew patch users 42` — for any service path.
   - title: Built for agents
     details: JSON output by default, structured errors, and non-zero exit codes an AI can act on.
   - title: Custom commands

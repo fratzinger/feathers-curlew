@@ -1,7 +1,7 @@
 import type { CurlewClient } from '../types'
 import { defineCommand } from 'citty'
 import { writeResult } from '../output'
-import { commonArgs } from './shared'
+import { commonArgs } from './common-args'
 
 /** `logout` — clear the stored remote session (no-op in-process). */
 export function makeLogoutCommand(client: CurlewClient) {

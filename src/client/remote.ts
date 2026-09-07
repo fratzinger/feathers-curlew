@@ -8,7 +8,7 @@ import type {
 } from '../types'
 import { consola } from 'consola'
 import { CurlewError } from '../errors'
-import { coerceId } from '../params'
+import { coerceId } from '../utils/coerce-id'
 import { createFileStorage } from '../session'
 
 interface FeathersLikeApp {

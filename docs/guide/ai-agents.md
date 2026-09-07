@@ -29,10 +29,18 @@ Everything is tailored to your actual app:
   methods are detailed, so 40 services don't produce 40 repetitive lines.
 - **Custom commands** — your `defineCurlewCommand` names and descriptions.
 - **Grammar & flags** — the command shapes (`find`/`get`/`create`/…, `findOne`/`count`/`exists`, bulk
-  `null`, `service <path> <method>`, `authenticate`, `waitUntil`, …) and the query/data flags.
+  `null`, `call <service> <method>`, `authenticate`, `waitUntil`, `watch`, …) and the query/data flags.
 - **Permission model** — front and center: internal/root by default, scope with `--as`/`--token`.
+- **Safety** — that `--dry-run` reports `{ wouldAffect, sample }` and changes nothing, so an agent is
+  told to preview a bulk write instead of discovering the blast radius afterwards.
+- **Volume** — that `--ndjson` streams one record per line, so a large `find` doesn't fill the agent's
+  context window with a single unbounded line.
 
 The agent can always fall back to `curlew services` / `curlew describe <service>` for live details.
+
+The mint line (`authenticate --as`) is only included when [`impersonate`](./permissions#minting-a-token-authenticate-as)
+is enabled, and the `--as` hint only when [`resolveUser`](./permissions#resolving-as) is set — an agent
+shouldn't be offered a command that answers with an error.
 
 ## Formats
 

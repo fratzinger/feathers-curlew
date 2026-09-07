@@ -54,54 +54,34 @@ a transport-less app avoids surprises. See [In-Process Mode](./in-process).
 # List services
 npx curlew services
 
-# CRUD, per service
-npx curlew users find --query '{"$limit":5}'
-npx curlew users get 42
-npx curlew users create --data '{"email":"a@b.c","password":"secret"}'
-npx curlew users patch 42 --data '{"role":"admin"}'
-npx curlew users remove 42
+# CRUD — the verb first, the service path as its argument
+npx curlew find users --query '{"$limit":5}'
+npx curlew get users 42
+npx curlew create users --data '{"email":"a@b.c","password":"secret"}'
+npx curlew patch users 42 --data '{"role":"admin"}'
+npx curlew remove users 42
 
 # Authenticate
 npx curlew authenticate --email a@b.c --password secret
 
-# Any service path (including nested), generically
-npx curlew service api/v1/users find
+# Any path works, including nested and hyphenated ones
+npx curlew find api/v1/users
+npx curlew find user-settings
 ```
 
 Add `--pretty` for indented JSON. Errors are printed as JSON to stderr with a non-zero exit code.
 
-## Shorthands, custom methods & bulk ops
+That is the whole grammar. Read shortcuts (`findOne`, `count`, `exists`, `findAll`), Feathers custom
+methods and bulk writes follow the same shape — see [Method commands](./config#method-commands) for the
+full reference.
 
-```bash
-# Read shortcuts
-npx curlew users findOne --query '{"email":"a@b.c"}'  # one record, or null
-npx curlew users exists 42                            # → { "exists": true } (no 404 error)
-npx curlew users count --query '{"active":true}'      # → 12
-npx curlew users findAll                              # ignore pagination, return all
-
-# Feathers custom methods: service <path> <method>
-npx curlew service messages markRead --data '{"id":42}'
-
-# Bulk patch/remove on `multi` services — use the literal id `null`
-npx curlew users patch null --data '{"active":false}' --query '{"pending":true}'
-npx curlew users remove null --query '{"expired":true}'
-
-# Introspection & session
-npx curlew describe messages          # methods a service supports (incl. custom)
-npx curlew whoami --token "$JWT"      # resolve the current user
-npx curlew --remote logout            # forget the stored remote session
-```
-
-Short flags: `-q` = `--query`, `-d` = `--data`. Multi `create` takes a JSON array
-(`--data '[{…},{…}]'`).
-
-### Building queries
+## Building queries
 
 Use `--query` for arbitrary Feathers queries (operators like `$in`, `$gt`, …), plus shortcuts for the
 common bits — they merge into the query and win:
 
 ```bash
-npx curlew users find \
+npx curlew find users \
   --query '{"role":"admin"}' \
   --select id,email \
   --sort '-createdAt,name' \
@@ -114,9 +94,22 @@ Large or generated payloads can come from a file or stdin — `--data`/`--query`
 `-` reads stdin:
 
 ```bash
-npx curlew users create --data @user.json
-cat users.json | npx curlew users create --data -
+npx curlew create users --data @user.json
+cat users.json | npx curlew create users --data -
 ```
+
+## Large results
+
+By default a result is one JSON line, which gets unwieldy — and for an AI agent, unreadable — past a few
+hundred records. `--ndjson` writes one record per line instead, and `findAll --ndjson` pages through the
+service rather than loading everything at once:
+
+```bash
+npx curlew findAll users --ndjson | head -20
+npx curlew findAll users --ndjson --page-size 500 > users.ndjson
+```
+
+Single records and `count` stay a single line, so `--ndjson` is safe to pass unconditionally.
 
 ## Teaching an AI agent about curlew
 
@@ -136,7 +129,7 @@ You do not have to use the binary — you can run curlew from your own script:
 import { runCurlew } from 'feathers-curlew'
 import { app } from './src/app'
 
-const exitCode = await runCurlew(app, { argv: ['users', 'find'] })
+const exitCode = await runCurlew(app, { argv: ['find', 'users'] })
 process.exit(exitCode)
 ```
 
